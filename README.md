@@ -40,7 +40,7 @@ You will be requiring credentials to access this application :
     password : 's'
     
 -----
-#Tests
+#Tests                   
 -----
 For running tests type command(make sure you are in the project directory) in terminal : 
 

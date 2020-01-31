@@ -1,49 +1,48 @@
 import DBConnection as db
 import sqlite3
 
-from pip._vendor.distlib.compat import raw_input
-
 
 class BDO:
+    """
+    Class which handles operations accessible to BDO(Block Development Officer).
+    """
 
     def __init__(self):
 
         self.conn = db.sql_connection()
         self.bdo_id = None
-        self.projects = ['', 'Road Construction', 'Sewage Treatment', 'Building Construction']
-
-        self.login()
+        self.projects = ['Road Construction', 'Sewage Treatment', 'Building Construction']
 
     def login(self):
         """
-        Function for BDO Login
+        Function for BDO Login.
         :return:
         """
 
         print("\n~~~ BDO Login ~~~")
-        email = str(raw_input("Enter email: "))
-        password = str(raw_input("Enter password: "))
 
         try:
-            cursor = self.conn.execute(
-                "SELECT * FROM bdo where lower(email)='{}' AND password='{}'".format(email, password))
-            cursor = cursor.fetchone()
-            if cursor is None:
+
+            email = input("Enter email: ")
+            password = input("Enter password: ")
+            result = self.conn.execute(
+                "SELECT * FROM bdo where lower(email)='{}' AND password='{}'".format(email, password)).fetchone()
+            if result is None:
                 print("\nEmail & Password does not match!")
-                self.login()
 
             else:
-                self.bdo_id = cursor[0]
+                self.bdo_id = result[0]
                 print('Logged In')
                 self.dashboard(email)
+            return True
 
-        except sqlite3.Error as e:
-            print(type(e).__name__, ": ", e)
+        except Exception as e:
+            print(type(e), e)
+            return False
 
     def dashboard(self, email):
         """
-        Display Dashboard Options to BDO
-        :param email:
+        Display Dashboard Options to BDO.
         :return:
         """
 
@@ -57,32 +56,35 @@ class BDO:
         print('\n 6. Delete Project')
         print('\n 7. View Unapproved Members')
         print('\n 8. Exit')
-        choice = str(input('Please choose option : '))
+        choice = input('Please choose option : ')
         if choice == '1':
             self.gpm_create()
+            return 1
         elif choice == '2':
             self.gpm_update()
+            return 2
         elif choice == '3':
             self.gpm_delete()
+            return 3
         elif choice == '4':
             self.project_create()
+            return 4
         elif choice == '5':
             self.project_update()
+            return 5
         elif choice == '6':
             self.project_delete()
+            return 6
         elif choice == '7':
-            self.approve_member()
-        elif choice == '8':
-            print('Exitted')
+            self.member_approve()
+            return 7
         else:
-            print("Try again.")
-
-        if choice != '8':
-            self.dashboard(email)
+            print('Exit')
+            return False
 
     def gpm_create(self):
         """
-        Creates GPM
+        Creates GPM.
         :return:
         """
         print('\n** Creating new GPM **')
@@ -107,74 +109,78 @@ class BDO:
             return False
 
     def gpm_update(self):
+        """
+        Update GPM details by GPM email.
+        :return:
+        """
 
         print('\n*** Updating GPM ***')
-        gpm_email = input('Enter GPM\'s email : ')
 
-        gpm = self.conn.execute("SELECT * FROM gpm where EMAIL = '{}' AND BDO_ID = {}".format(gpm_email, self.bdo_id))
-        gpm = gpm.fetchone()
-        print(gpm)
-
-        print('\n\nEnter the details you want to change or press Enter')
-        fname = input('First Name : ') or gpm[2]
-        lname = input('Last Name : ') or gpm[3]
-        state = input('State : ') or gpm[4]
-        address = input('Address : ') or gpm[5]
-        pincode = input('PinCode : ') or gpm[6]
-        password = input('Password : ') or gpm[8]
         try:
+            gpm = self.gpm_view()
+            print(gpm)
+            email = gpm[7]
+
+            print('\n\nEnter the updated details ')
+            fname = input('First Name : ')
+            lname = input('Last Name : ')
+            state = input('State : ')
+            address = input('Address : ')
+            password = input('Password : ')
+
             self.conn.execute("UPDATE GPM \
                           SET \
                           FNAME = '{}', \
                           NAME = '{}', \
                           STATE = '{}',\
                           ADDRESS = '{}', \
-                          PINCODE = {}, \
                           PASSWORD = '{}' \
                           WHERE EMAIL = '{}'\
-                                 ".format(fname, lname, state, address, pincode, password, gpm_email))
+                                 ".format(fname, lname, state, address, password, email))
             self.conn.commit()
             print('Updated Successfully')
             return True
 
-        except sqlite3.Error as e:
+        except Exception as e:
             print(e)
             return False
 
     def gpm_delete(self):
         """
-        Deletes GPM record by id
+        Deletes GPM record by ID.
         :return:
         """
         print('\n*** Delete GPM ***')
-        gpm_id = input('\nEnter email of GPM : ')
-        gpm = self.conn.execute("Select * from gpm where EMAIL = '{}' and BDO_ID = {}".format(gpm_id, self.bdo_id))
-        gpm = gpm.fetchone()
-        print(gpm)
-        a = input('Are you sure you want to delete this GPM(Y for Yes/ N for No) ?')
-        if a == 'Y' or 'y':
-            self.conn.execute("Delete * from gpm where EMAIL = '{}' and BDO_ID = {}".format(gpm_id, self.bdo_id))
+        gpm = self.gpm_view()
+        email = gpm[7]
+        a = input('Are you sure you want to delete this GPM(Y for Yes) ?')
+        if a == 'Y':
+            self.conn.execute("Delete from gpm where EMAIL = '{}' and BDO_ID = {}".format(email, self.bdo_id))
             self.conn.commit()
             print('Deleted')
             return True
-        elif a == 'N' or 'n':
-            self.gpm_Delete()
+        else:
+            print('GPM Not Deleted')
             return False
 
     def project_create(self):
-
+        """
+        Create new Project.
+        :return:
+        """
         print('\n** Creating new Project **')
         name = input('Project Name : ')
         project = int(input(
             'Specify Project Type(1/2/3) : \n 1 for Road Construction\n 2 for Sewage treatment\n 3 for Building \
-            Construction'))
+            Construction')) + 1
+        print(project)
         state = input('State : ')
         member_req = input('Member Estimate : ')
         cost_est = input('Cost Estimate : ')
         start_date_est = input('Start Date Estimate(YYYY/MM/DD) : ')
         end_date_est = input('End Date Estimate(YYYY/MM/DD) : ')
-
-        if project == 1 or 2 or 3:
+        a = [0, 1, 2]
+        if a.count(project) != 0:
             project_type = self.projects[project]
             try:
                 self.conn.execute("INSERT INTO projects(NAME, TYPE, STATE, MEMBERS_REQ, COST_EST, START_DATE_EST, END_DATE_EST) \
@@ -184,55 +190,115 @@ class BDO:
 
                 self.conn.commit()
                 print('Created Successfully')
+                return True
 
             except sqlite3.Error as e:
                 print(e)
+                return False
 
         else:
             print('Wrong Choice')
+            return False
 
     def project_update(self):
+        """
+        Update project based on ID.
+        :return:
+        """
         print('\n\n\n*** Updating Project Details ***\n')
+        self.projects_view()
 
-        projects = self.conn.execute("select * from projects")
-        projects = projects.fetchone()
-        print(projects)
-        id = int(input(('\n\n Enter the project id you would like to update : ')))
-        state = str(raw_input('Enter State Name : '))
+        try:
 
-        if projects != None :
-            try:
-                self.conn.execute("update projects set \
-                                    STATE = '{}' where ID = {} ".format(state, id))
-                self.conn.commit()
-                print('Updated')
+            project_id = int(input('\n\n Enter the project id you would like to update : '))
+            state = input('Enter State Name : ')
+            self.conn.execute("update projects set \
+                                        STATE = '{}' where ID = {} ".format(state, project_id))
+            self.conn.commit()
+            print('Updated')
+            return True
 
-            except sqlite3.Error as e:
-                print(e)
+        except Exception as e:
+            print(e)
+            return False
 
     def project_delete(self):
+        """
+        Delete Project by ID.
+        :return:
+        """
 
         print('\n\n\nDeleting Projects')
-        id = int(input('\n\n Enter project id you would like to delete : '))
+
         try:
-            self.conn.execute("Delete * from projects where id = {}".format(id))
+            self.projects_view()
+            id = int(input('\n\n Enter project id you would like to delete : '))
+            self.conn.execute("Delete from projects where id = {}".format(id))
             self.conn.commit()
             print('Deleted Successfully')
-        except sqlite3.Error as e:
+            return True
+        except Exception as e:
             print(e)
+            return False
 
-    def approve_member(self):
+    def member_approve(self):
+        """
+        Change member_status to approved.
+        :return:
+        """
         print('\n\nUnApproved Members')
 
         try:
-            members = self.conn.execute("SELECT * FROM members WHERE MEMBER_STATUS != 1")
-            for x in members: print(x)
-
-            a = int(input('\n\n\nEnter the Member Id which you would like to approve  : '))
-            self.conn.execute("UPDATE members SET MEMBER_STATUS = 1 WHERE ID = {}".format(a))
-            self.conn.commit()
-        except sqlite3.Error as e:
+            if self.member_view_unapproved():
+                a = int(input('\n\n\nEnter the Member Id which you would like to approve  : '))
+                self.conn.execute("UPDATE members SET MEMBER_STATUS = 1 WHERE ID = {}".format(a))
+                self.conn.commit()
+                return True
+        except Exception as e:
             print(e)
+            return False
 
+    def gpm_view(self):
+        """
+        Returns details of GPM by email.
+        :return:
+        """
+        try:
+            gpm_email = input('Enter GPM\'s email : ')
+            gpm = self.conn.execute(
+                "SELECT * FROM gpm where EMAIL = '{}' AND BDO_ID = {}".format(gpm_email, self.bdo_id)).fetchone()
+            print(gpm)
+            return gpm
+        except Exception as e:
+            print(e)
+            return False
 
+    def projects_view(self):
+        """
+        Prints list of Projects.
+        :return:
+        """
+        try:
+            projects = self.conn.execute("select * from projects").fetchall()
+            print(projects)
+            return True
+        except Exception as e:
+            print(e)
+            return False
 
+    def member_view_unapproved(self):
+        """
+        Prints list of Unapproved Members.
+        :return:
+        """
+        try:
+            members = self.conn.execute("SELECT * FROM members WHERE MEMBER_STATUS != 1").fetchall()
+            if members is not None:
+                print(members)
+                return True
+            else:
+                print('No Members to Display')
+                return False
+        except Exception as e:
+            print(e)
+            return False

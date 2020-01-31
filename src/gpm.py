@@ -10,29 +10,28 @@ class GPM:
         self.conn = db.sql_connection()
         self.gpm_id = None
 
-        self.login()
-
     def login(self):
 
         print("\n~~~ GPM Login ~~~")
-        email = str(raw_input("Enter email: "))
-        password = str(raw_input("Enter password: "))
+        email = input("Enter email: ")
+        password = input("Enter password: ")
 
         try:
-            cursor = self.conn.execute(
-                "SELECT * FROM gpm where EMAIL='{}' AND PASSWORD='{}'".format(email, password))
-            cursor = cursor.fetchone()
-            if cursor is None:
+            result = self.conn.execute(
+                "SELECT * FROM gpm where EMAIL='{}' AND PASSWORD='{}'".format(email, password)).fetchone()
+            if result is None:
                 print("\nEmail & Password does not match!")
-                self.login()
+                return False
 
             else:
-                self.gpm_id = cursor[0]
+                self.gpm_id = result[0]
                 print('Logged In')
                 self.dashboard(email)
+                return True
 
-        except sqlite3.Error as e:
+        except Exception as e:
             print(type(e).__name__, ": ", e)
+            return False
 
     def dashboard(self, email):
 
@@ -67,14 +66,20 @@ class GPM:
 
         try:
             print('\n\nApproved Members')
-            members = self.conn.execute("Select * from members where MEMBER_STATUS = 1 ")
-            for x in members: print(x)
+            members_approved = self.conn.execute("Select * from members where MEMBER_STATUS = 1 and GPM_ID = {}".format(self.gpm_id)).fetchall()
+            if members_approved is None:
+                print('No members exist')
+            else:
+                print(members_approved)
 
             print('\n\nUnApproved Members')
-            members = self.conn.execute("Select * from members where MEMBER_STATUS = 0 ")
-            for x in members: print(x)
+            members_unapproved = self.conn.execute("Select * from members where MEMBER_STATUS = 0 and GPM_ID = {}".format(self.gpm_id)).fetchall()
+            if members_unapproved is None:
+                print('No members exist')
+            else:
+                print(members_unapproved)
 
-        except sqlite3.Error as e:
+        except Exception as e:
             print(e)
 
     def gpm_assign_member(self):
@@ -108,11 +113,27 @@ class GPM:
             return False
 
     def gpm_update_member(self):
-        print('JMD')
+        print('\n\nUpdating Member')
+        try:
+            member_id = int(input('Enter the Member Id you would like to update'))
+            state = input('Enter State Name : ')
+            self.conn.execute("UPDATE members \
+                              SET STATE = {}  \
+                              WHERE ID = {} and GPM_ID = {}".format(state, member_id, self.gpm_id))
+            print('Member Updated Successfully')
 
+        except Exception as e:
+            print(e)
 
     def gpm_delete_member(self):
-        print('Delete Member')
+        print('\n\nDELETING MEMBER')
+        try:
+            member_id = int(input('Enter Member ID you wish to delete'))
+            self.conn.execute("DELETE FROM members where ID = {} and GPM_ID = {}".format(member_id, self.gpm_id))
+            print('Deleted Successfully')
+
+        except Exception as e:
+            print(e)
 
     def gpm_view_complaints(self):
         print('View Complaints')

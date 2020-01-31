@@ -30,8 +30,8 @@ class Test_Member:
     def test_view_success(self, login, db):
         db_mock = mock.Mock()
         db.return_value = db_mock
-        db_mock.execute.return_value = True
-        assert Member().view() == True
+        db_mock.execute.return_value.fetchone.return_value = True
+        assert Member().view() is True
 
     @mock.patch('Member.db.sql_connection')
     @mock.patch('Member.Member.login', return_value=True)

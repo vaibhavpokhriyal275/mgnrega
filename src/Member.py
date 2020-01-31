@@ -59,7 +59,7 @@ class Member:
         try:
 
             # df = pd.read_sql_query("SELECT * FROM members WHERE ID = {}".format(self.member_id), self.conn)
-            details = self.conn.execute("SELECT * FROM members WHERE ID = {}".format(self.member_id))
+            details = self.conn.execute("SELECT * FROM members WHERE ID = {}".format(self.member_id)).fetchone()
             print(details)
             return True
 

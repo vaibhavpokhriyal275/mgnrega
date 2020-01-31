@@ -1,5 +1,5 @@
 from BDO import BDO
-from GPM import GPM
+from gpm import GPM
 from Member import Member
 import DBConnection as db
 
@@ -108,9 +108,9 @@ class Run:
         choice = str(input("Choose: "))
 
         if choice == '1':
-            BDO()
+            BDO().login()
         elif choice == '2':
-            GPM()
+            GPM().login()
         elif choice == '3':
             Member()
         elif choice == '4':
